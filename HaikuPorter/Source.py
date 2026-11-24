@@ -100,6 +100,10 @@ class Source(object):
 			'GIT_AUTHOR_EMAIL': Configuration.getPackagerEmail(),
 			'GIT_AUTHOR_NAME': Configuration.getPackagerName().encode("utf-8"),
 		}
+		# Without PATH, git is found only in the default path (/usr/bin),
+		# where a NixOS host does not have it.
+		if 'PATH' in os.environ:
+			self.gitEnv['PATH'] = os.environ['PATH']
 
 	def fetch(self, port):
 		"""Fetch the source from one of the URIs given in the recipe.
