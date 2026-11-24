@@ -6,7 +6,7 @@ on:
 jobs:
   build:
     env:
-      REPOSITORY: "ghcr.io/irix7/haikuporter"
+      REPOSITORY: "ghcr.io/irix7/museporter"
     name: Build HaikuPorter Buildmaster
     runs-on: ubuntu-latest
     steps:

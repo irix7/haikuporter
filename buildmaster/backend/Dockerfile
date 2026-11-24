@@ -8,7 +8,7 @@ RUN apt-get update \
 # The package tools come from the irix7 fork of Haiku (branch indy-mips, its
 # default): upstream's do not know the mips architecture.
 RUN git clone --depth 1 https://review.haiku-os.org/buildtools /tmp/buildtools \
-	&& git clone --depth 1 https://github.com/irix7/haiku /tmp/haiku \
+	&& git clone --depth 1 https://github.com/irix7/muse /tmp/haiku \
 	&& cd /tmp/buildtools/jam && make && ./jam0 install \
 	&& cd /tmp/haiku && ./configure --host-only \
 	&& jam -j2 -q \<build\>package \<build\>package_repo
