@@ -1,4 +1,4 @@
-REPO=ghcr.io/haikuports
+REPO=ghcr.io/irix7
 VERSION=$(shell git describe --dirty --tags --abbrev=1)
 default:
 	podman build --no-cache --tag ${REPO}/haikuporter/frontend:${VERSION} .

@@ -1,7 +1,7 @@
 #
 # CAREFUL HERE! The build context is the top level directory of git!
 #
-REPO=ghcr.io/haikuports
+REPO=ghcr.io/irix7
 VERSION=$(shell git describe --dirty --tags --abbrev=1)
 default:
 	podman build --no-cache --tag ${REPO}/haikuporter/buildmaster:${VERSION} -f Dockerfile ../..
