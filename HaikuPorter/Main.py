@@ -623,6 +623,10 @@ class Main(object):
 				portID = self.repository.getPortIdForPackageId(packageID)
 				if portID not in requiredPortIDs:
 					requiredPort = allPorts[portID]
+					# a package of the port itself left in the build repository
+					# is not a prerequisite of that port
+					if requiredPort.versionedName == port.versionedName:
+						continue
 					if ((getOption('createSourcePackagesForBootstrap')
 							or getOption('createSourcePackages'))
 						and (not requiredPort.sourcePackage

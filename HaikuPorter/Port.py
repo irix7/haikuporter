@@ -124,6 +124,7 @@ class Port(object):
 			'portVersion': self.version,
 			'portVersionedName': self.versionedName,
 			'portBaseDir': self.baseDir,
+			'portDir': self.baseDir,
 		}
 		self.shellVariables.update(globalShellVariables)
 		self._updateShellVariables(True)
@@ -1608,8 +1609,19 @@ class Port(object):
 		shellVariables = self.shellVariables.copy()
 		shellVariables['fileToParse'] = self.preparedRecipeFile
 		shellVariables['recipeAction'] = action
+		# The recipe runs cd on /packages paths. The install went to
+		# DESTDIR, so this moves such a path there. The .pathfix wrappers
+		# do the same for external commands.
+		cdWrapper = '''
+cd() {
+	case "$1" in
+		/packages|/packages/*) [ -n "$DESTDIR" ] && set -- "$DESTDIR$1" "${@:2}" ;;
+	esac
+	builtin cd "$@"
+}
+'''
 		wrapperScriptContent = (getShellVariableSetters(shellVariables)
-								+ recipeActionScript)
+								+ cdWrapper + recipeActionScript)
 		wrapperScript = self.workDir + '/wrapper-script'
 		storeStringInFile(wrapperScriptContent, wrapperScript)
 		self._openShell(['-c', '. ' + wrapperScript], targetDir, {})
@@ -1632,8 +1644,25 @@ class Port(object):
 			for path in crossToolsPaths:
 				target = os.path.join(path, triple + '-' + name)
 				if os.path.exists(target):
-					os.symlink(target, link)
+					if tool in ('gcc', 'cc'):
+						# GCC 17 defaults to C23, where "()" means "(void)".
+						# Older C code declares functions that way. A -std
+						# flag from the recipe comes later and wins.
+						with open(link, 'w') as f:
+							f.write('#!/bin/sh\nexec "%s" -std=gnu17 "$@"\n'
+								% os.path.abspath(target))
+						os.chmod(link, 0o755)
+					else:
+						os.symlink(target, link)
 					break
+
+		# Haiku recipes set MIME types with settype. The host has no
+		# settype. The package step runs mimeset on every file, so this
+		# does nothing.
+		settype = os.path.join(aliasDir, 'settype')
+		with open(settype, 'w') as f:
+			f.write('#!/bin/sh\nexit 0\n')
+		os.chmod(settype, 0o755)
 
 		# Recipes remove and move files below the prefix, which is below
 		# /packages on Haiku. The wrappers move such a path to DESTDIR.
@@ -1652,13 +1681,16 @@ unset IFS
 args=()
 for a in "$@"; do
 	case "$a" in
-		/packages/*) a="$DESTDIR$a" ;;
+		/packages|/packages/*) a="$DESTDIR$a" ;;
 	esac
 	args+=("$a")
 done
 # On Haiku a recipe removes the files its build made, here a build can make
 # others, so rm does not fail for a file that is not there.
 [ "$name" = rm ] && args=(-f "${args[@]}")
+# The mkinstalldirs of old libtool-era packages calls mkdir on paths that
+# already exist under DESTDIR.
+[ "$name" = mkdir ] && args=(-p "${args[@]}")
 exec "$real" "${args[@]}"
 ''')
 		os.chmod(wrapper, 0o755)
@@ -1689,7 +1721,7 @@ install=
 dest=
 for a in "$@"; do
 	case "$a" in
-		install|install[-_]*) install=1 ;;
+		install|install[-_]*|*_install) install=1 ;;
 		DESTDIR=*) dest=1 ;;
 	esac
 done

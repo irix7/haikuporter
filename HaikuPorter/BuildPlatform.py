@@ -298,6 +298,8 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:autoreconf',
 			'cmd:awk',
 			'cmd:bash',
+			# Host cargo; the runner's version is above the 0.74 minimum.
+			'cmd:cargo',
 			'cmd:cat',
 			'cmd:cmake',
 			'cmd:cmp',
@@ -321,6 +323,8 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:python3',
 			'cmd:ranlib',
 			'cmd:readelf',
+			# Host rustc, used by spidermonkey140 in libpeas2.
+			'cmd:rustc',
 			'cmd:sed',
 			'cmd:strip',
 			'cmd:tar',

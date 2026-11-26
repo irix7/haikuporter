@@ -356,7 +356,9 @@ runConfigure()
 		buildSpec="$buildSpec --build=$buildMachineTriple"
 	fi
 
-	$configure $dirArgs $buildSpec $@
+	# keep config.log of a failed configure next to the port's work files
+	$configure $dirArgs $buildSpec $@ \
+		|| { cp -f config.log "$workDir/config-failed.log" 2>/dev/null; false; }
 }
 
 # helper function to validate CMake invocations (and use the correct one)
@@ -384,7 +386,18 @@ cmake()
 		CMAKE=$(type -Pp cmake)
 	fi
 
-	$CMAKE "$@"
+	# cross builds find libraries and packages in the cross sysroot
+	local crossArgs=()
+	if [[ $isCrossRepository == true && -n $crossSysrootDir ]] \
+			&& [[ "$*" != *--install* ]] && [[ "$*" != *--build* ]]; then
+		crossArgs=(
+			"-DCMAKE_FIND_ROOT_PATH=$crossSysrootDir"
+			"-DCMAKE_PREFIX_PATH=$crossSysrootDir/boot/system/develop"
+			"-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
+		)
+	fi
+
+	$CMAKE ${crossArgs[@]+"${crossArgs[@]}"} "$@"
 }
 
 # helper function to validate Meson invocations (and use the correct one)
@@ -831,7 +844,15 @@ packageEntries()
 		targetFile="$packagePrefix/$file"
 		targetDir="${targetFile%/*}"
 		[[ -d "$targetDir" ]] || mkdir -p "$targetDir"
-		mv "$installDestDir$prefix/$file" "$targetDir"
+		# $file is unquoted so that a glob such as share/man/* expands
+		shopt -s nullglob
+		sources=( "$installDestDir$prefix/"$file )
+		shopt -u nullglob
+		if [[ ${#sources[@]} -eq 0 ]]; then
+			echo >&2 "packageEntries: no files match \"$prefix/$file\""
+			exit 1
+		fi
+		mv "${sources[@]}" "$targetDir"
 	done
 }
 

@@ -46,7 +46,8 @@ BUILD_PREREQUIRES="
 
 BUILD()
 {
-	perl Makefile.PL PREFIX=$prefix
+	# Pass the target compiler, or Makefile.PL uses the host perl's cc
+	perl Makefile.PL PREFIX=$prefix CC=$(getTargetArchitectureCommand gcc) LD=$(getTargetArchitectureCommand gcc)
 	make
 }
 
