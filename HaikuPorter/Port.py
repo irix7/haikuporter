@@ -1843,6 +1843,10 @@ done
 					shellEnv[name] = hostCC
 				for name in ('CXX_FOR_BUILD', 'HOSTCXX', 'BUILD_CXX'):
 					shellEnv[name] = hostCXX
+				# Rust build scripts and proc macros run on the host and
+				# link with the host compiler, not the alias cc.
+				shellEnv['CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER'] = (
+					hostCC)
 				# The flags of the target do not apply to host programs.
 				for name in ('CFLAGS_FOR_BUILD', 'CPPFLAGS_FOR_BUILD',
 						'LDFLAGS_FOR_BUILD', 'CXXFLAGS_FOR_BUILD'):

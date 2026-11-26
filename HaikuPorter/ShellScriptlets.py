@@ -394,6 +394,8 @@ cmake()
 			"-DCMAKE_FIND_ROOT_PATH=$crossSysrootDir"
 			"-DCMAKE_PREFIX_PATH=$crossSysrootDir/boot/system/develop"
 			"-DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER"
+			# CMake 4 rejects projects that ask for CMake before 3.5
+			"-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
 		)
 	fi
 
