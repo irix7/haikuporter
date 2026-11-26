@@ -1634,6 +1634,36 @@ class Port(object):
 				if os.path.exists(target):
 					os.symlink(target, link)
 					break
+
+		# Recipes remove and move files below the prefix, which is below
+		# /packages on Haiku. The wrappers move such a path to DESTDIR.
+		wrapper = os.path.join(aliasDir, '.pathfix')
+		with open(wrapper, 'w') as f:
+			f.write('''#!/bin/bash
+name=${0##*/}
+here=$(dirname "$0")
+real=
+IFS=:
+for d in $PATH; do
+	[ "$d" = "$here" ] && continue
+	if [ -x "$d/$name" ]; then real="$d/$name"; break; fi
+done
+unset IFS
+args=()
+for a in "$@"; do
+	case "$a" in
+		/packages/*) a="$DESTDIR$a" ;;
+	esac
+	args+=("$a")
+done
+exec "$real" "${args[@]}"
+''')
+		os.chmod(wrapper, 0o755)
+		for tool in ('rm', 'mv', 'cp', 'ln', 'mkdir', 'rmdir', 'install',
+				'chmod', 'touch', 'cat', 'ls', 'find', 'sed', 'test'):
+			link = os.path.join(aliasDir, tool)
+			if not os.path.lexists(link):
+				os.symlink('.pathfix', link)
 		return aliasDir
 
 	def _openShell(self, params, targetDir, env):
