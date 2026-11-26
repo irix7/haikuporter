@@ -1799,6 +1799,10 @@ done
 					shellEnv[name] = hostCC
 				for name in ('CXX_FOR_BUILD', 'HOSTCXX', 'BUILD_CXX'):
 					shellEnv[name] = hostCXX
+				# The flags of the target do not apply to host programs.
+				for name in ('CFLAGS_FOR_BUILD', 'CPPFLAGS_FOR_BUILD',
+						'LDFLAGS_FOR_BUILD', 'CXXFLAGS_FOR_BUILD'):
+					shellEnv[name] = ''
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [shellEnv['PATH']])
 		elif self.secondaryArchitecture:
 			# include secondary architecture tools in path

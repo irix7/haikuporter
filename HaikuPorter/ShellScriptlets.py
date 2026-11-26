@@ -358,7 +358,7 @@ runConfigure()
 
 	# keep config.log of a failed configure next to the port's work files
 	$configure $dirArgs $buildSpec $@ \
-		|| { cp -f config.log "$workDir/config-failed.log" 2>/dev/null; false; }
+		|| { cp -f config.log "$workDir/config-failed.log" 2>/dev/null; echo "---- config.log (tail) ----" >&2; tail -n 60 config.log >&2; false; }
 }
 
 # helper function to validate CMake invocations (and use the correct one)
