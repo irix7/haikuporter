@@ -1626,6 +1626,28 @@ cd() {
 		storeStringInFile(wrapperScriptContent, wrapperScript)
 		self._openShell(['-c', '. ' + wrapperScript], targetDir, {})
 
+	def _writeCompilerWrapper(self, aliasDir, name, target):
+		"""Writes a wrapper script for a cross compiler. GCC 17 defaults to
+		C23, where "()" means "(void)", so C gets -std=gnu17 (a -std flag
+		from the recipe comes later and wins). Flags for x86 hosts that
+		recipes pass are dropped."""
+		link = os.path.join(aliasDir, name)
+		if os.path.lexists(link):
+			return
+		std = '-std=gnu17' if name.endswith(('gcc', 'cc')) else ''
+		with open(link, 'w') as f:
+			f.write('''#!/usr/bin/env bash
+args=()
+for a in "$@"; do
+	case "$a" in
+		-m32|-m64|-msse*|-mssse3|-mavx*|-maes|-mpclmul|-mfpmath=*|-mfma|-mf16c|-mbmi*|-mpopcnt|-mx32|-march=native|-mtune=native) ;;
+		*) args+=("$a") ;;
+	esac
+done
+exec "%s" %s "${args[@]}"
+''' % (os.path.abspath(target), std))
+		os.chmod(link, 0o755)
+
 	def _createToolAliases(self, crossToolsPaths):
 		"""Makes the tools of the cross toolchain available under their
 		   plain names (gcc, ar, ...), for recipes that call them so and
@@ -1644,14 +1666,15 @@ cd() {
 			for path in crossToolsPaths:
 				target = os.path.join(path, triple + '-' + name)
 				if os.path.exists(target):
-					if tool in ('gcc', 'cc'):
-						# GCC 17 defaults to C23, where "()" means "(void)".
-						# Older C code declares functions that way. A -std
-						# flag from the recipe comes later and wins.
-						with open(link, 'w') as f:
-							f.write('#!/bin/sh\nexec "%s" -std=gnu17 "$@"\n'
-								% os.path.abspath(target))
-						os.chmod(link, 0o755)
+					if tool in ('gcc', 'cc', 'g++', 'c++'):
+						self._writeCompilerWrapper(aliasDir, tool, target)
+						# configure scripts look for the prefixed name
+						# first, which would bypass the wrapper
+						self._writeCompilerWrapper(aliasDir,
+							triple + '-' + tool, target)
+						self._writeCompilerWrapper(aliasDir,
+							triple.replace('mips-', 'mips64-', 1) + '-' + tool,
+							target)
 					else:
 						os.symlink(target, link)
 					break
