@@ -1639,7 +1639,7 @@ class Port(object):
 		# /packages on Haiku. The wrappers move such a path to DESTDIR.
 		wrapper = os.path.join(aliasDir, '.pathfix')
 		with open(wrapper, 'w') as f:
-			f.write('''#!/bin/bash
+			f.write('''#!/usr/bin/env bash
 name=${0##*/}
 here=$(dirname "$0")
 real=
@@ -1656,6 +1656,9 @@ for a in "$@"; do
 	esac
 	args+=("$a")
 done
+# On Haiku a recipe removes the files its build made, here a build can make
+# others, so rm does not fail for a file that is not there.
+[ "$name" = rm ] && args=(-f "${args[@]}")
 exec "$real" "${args[@]}"
 ''')
 		os.chmod(wrapper, 0o755)
@@ -1664,7 +1667,7 @@ exec "$real" "${args[@]}"
 		# so the targets that run tests do nothing.
 		makeWrapper = os.path.join(aliasDir, 'make')
 		with open(makeWrapper, 'w') as f:
-			f.write('''#!/bin/bash
+			f.write('''#!/usr/bin/env bash
 here=$(dirname "$0")
 real=
 IFS=:
@@ -1680,14 +1683,27 @@ for a in "$@"; do
 			exit 0 ;;
 	esac
 done
-exec "$real" "$@"
+# A Makefile that sets DESTDIR itself ignores the environment; a variable on
+# the command line wins.
+install=
+dest=
+for a in "$@"; do
+	case "$a" in
+		install|install[-_]*) install=1 ;;
+		DESTDIR=*) dest=1 ;;
+	esac
+done
+extra=()
+[ -n "$install" ] && [ -z "$dest" ] && [ -n "$DESTDIR" ] && extra=("DESTDIR=$DESTDIR")
+# A default target that runs tests (bzip2) is not made either.
+exec "$real" -o test -o tests -o check "$@" "${extra[@]}"
 ''')
 		os.chmod(makeWrapper, 0o755)
 
 		# The tool of Haiku that finds its directories.
 		finddir = os.path.join(aliasDir, 'finddir')
 		with open(finddir, 'w') as f:
-			f.write('''#!/bin/bash
+			f.write('''#!/usr/bin/env bash
 for a in "$@"; do
 	case "$a" in
 		-*) ;;
@@ -1734,6 +1750,14 @@ done
 				# where a cross build collects them.
 				shellEnv['DESTDIR'] = buildPlatform.getInstallDestDir(
 					self.workDir)
+				# Programs that a build runs itself are made for the
+				# build machine with the compiler of the host.
+				hostCC = shutil.which('gcc') or '/usr/bin/gcc'
+				hostCXX = shutil.which('g++') or '/usr/bin/g++'
+				for name in ('CC_FOR_BUILD', 'HOSTCC', 'BUILD_CC'):
+					shellEnv[name] = hostCC
+				for name in ('CXX_FOR_BUILD', 'HOSTCXX', 'BUILD_CXX'):
+					shellEnv[name] = hostCXX
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [shellEnv['PATH']])
 		elif self.secondaryArchitecture:
 			# include secondary architecture tools in path
