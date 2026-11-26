@@ -1656,9 +1656,10 @@ exec "%s" %s "${args[@]}"
 		os.makedirs(aliasDir, exist_ok=True)
 		triple = MachineArchitecture.getTripleFor(
 			buildPlatform.targetArchitecture)
-		for tool in ('gcc', 'cc', 'g++', 'c++', 'cpp', 'ar', 'ranlib', 'ld',
-				'as', 'nm', 'strip', 'objcopy', 'objdump', 'readelf',
-				'strings', 'size'):
+		# as and ld have no alias: the host gcc, which programs built for
+		# the build machine use, runs them from PATH and needs its own.
+		for tool in ('gcc', 'cc', 'g++', 'c++', 'cpp', 'ar', 'ranlib', 'nm',
+				'strip', 'objcopy', 'objdump', 'readelf', 'strings', 'size'):
 			link = os.path.join(aliasDir, tool)
 			if os.path.lexists(link):
 				continue
