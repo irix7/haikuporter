@@ -347,7 +347,12 @@ runConfigure()
 	# A cross build passes the host to configure, unless the recipe does.
 	if [[ $isCrossRepository == true && $omitBuildSpec != true
 			&& " $* " != *" --host"* ]]; then
-		buildSpec="--host=$effectiveTargetMachineTriple"
+		hostTriple=$effectiveTargetMachineTriple
+		case $portBaseName in
+			# GMP offers the ABIs o32 and n32 for mips64 only.
+			gmp*) hostTriple=${hostTriple/mips-/mips64-} ;;
+		esac
+		buildSpec="--host=$hostTriple"
 		buildSpec="$buildSpec --build=$buildMachineTriple"
 	fi
 
@@ -806,6 +811,12 @@ packageEntries()
 
 	# move the entries provided
 	for file; do
+		# A cross build keeps the files below $installDestDir. A recipe that
+		# gives a path below $prefix does so as on Haiku.
+		if [[ -n "$installDestDir" && "$file" == "$prefix"/* ]]; then
+			file="$installDestDir$file"
+		fi
+
 		# If absolute, resolve to relative file name.
 		if [[ "$file" = /* ]]; then
 			if [[ "$file" =~ "$installDestDir$prefix"/(.*) ]]; then

@@ -1659,6 +1659,55 @@ done
 exec "$real" "${args[@]}"
 ''')
 		os.chmod(wrapper, 0o755)
+
+		# The programs a build makes are for the target and cannot run here,
+		# so the targets that run tests do nothing.
+		makeWrapper = os.path.join(aliasDir, 'make')
+		with open(makeWrapper, 'w') as f:
+			f.write('''#!/bin/bash
+here=$(dirname "$0")
+real=
+IFS=:
+for d in $PATH; do
+	[ "$d" = "$here" ] && continue
+	if [ -x "$d/make" ]; then real="$d/make"; break; fi
+done
+unset IFS
+for a in "$@"; do
+	case "$a" in
+		check|test|tests|installcheck)
+			echo "make $a: skipped, the programs are for the target"
+			exit 0 ;;
+	esac
+done
+exec "$real" "$@"
+''')
+		os.chmod(makeWrapper, 0o755)
+
+		# The tool of Haiku that finds its directories.
+		finddir = os.path.join(aliasDir, 'finddir')
+		with open(finddir, 'w') as f:
+			f.write('''#!/bin/bash
+for a in "$@"; do
+	case "$a" in
+		-*) ;;
+		B_SYSTEM_DIRECTORY|B_BOOT_DIRECTORY) echo /boot/system ;;
+		B_SYSTEM_BIN_DIRECTORY|B_COMMON_BIN_DIRECTORY) echo /boot/system/bin ;;
+		B_SYSTEM_LIB_DIRECTORY|B_COMMON_LIB_DIRECTORY) echo /boot/system/lib ;;
+		B_SYSTEM_DATA_DIRECTORY|B_COMMON_DATA_DIRECTORY) echo /boot/system/data ;;
+		B_SYSTEM_DEVELOP_DIRECTORY|B_COMMON_DEVELOP_DIRECTORY) echo /boot/system/develop ;;
+		B_SYSTEM_SETTINGS_DIRECTORY|B_COMMON_SETTINGS_DIRECTORY) echo /boot/system/settings ;;
+		B_SYSTEM_ETC_DIRECTORY|B_COMMON_ETC_DIRECTORY) echo /boot/system/settings/etc ;;
+		B_SYSTEM_PACKAGES_DIRECTORY) echo /boot/system/packages ;;
+		B_USER_DIRECTORY) echo /boot/home ;;
+		B_USER_CONFIG_DIRECTORY) echo /boot/home/config ;;
+		B_USER_SETTINGS_DIRECTORY) echo /boot/home/config/settings ;;
+		B_SYSTEM_TEMP_DIRECTORY|B_USER_TEMP_DIRECTORY) echo /tmp ;;
+		*) echo /boot/system ;;
+	esac
+done
+''')
+		os.chmod(finddir, 0o755)
 		for tool in ('rm', 'mv', 'cp', 'ln', 'mkdir', 'rmdir', 'install',
 				'chmod', 'touch', 'cat', 'ls', 'find', 'sed', 'test'):
 			link = os.path.join(aliasDir, tool)
