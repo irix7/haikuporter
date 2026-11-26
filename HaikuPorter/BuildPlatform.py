@@ -297,7 +297,19 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:automake',
 			'cmd:autoreconf',
 			'cmd:awk',
+			# the cross compiler and binutils under their plain names
+			# (see _createToolAliases in Port.py)
+			'cmd:ar',
+			'cmd:as',
 			'cmd:bash',
+			'cmd:c++',
+			'cmd:cc',
+			'cmd:cpp',
+			'cmd:g++',
+			'cmd:objdump',
+			'cmd:pkg_config',
+			'cmd:size',
+			'cmd:strings',
 			# Host cargo; the runner's version is above the 0.74 minimum.
 			'cmd:cargo',
 			'cmd:cat',
