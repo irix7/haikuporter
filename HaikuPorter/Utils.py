@@ -315,7 +315,9 @@ def filteredEnvironment():
 
 	# The last three keep the bash of a NixOS host from reading /etc/bashrc
 	# and /etc/profile, which replace PATH.
-	for key in ['LIBRARY_PATH', 'PATH', 'NOSYSBASHRC', '__ETC_PROFILE_DONE',
+	for key in ['LIBRARY_PATH', 'PATH', 'NOSYSBASHRC', 'CONFIG_SITE',
+			'HAIKUPORTER_ALL_ARCHITECTURES',
+			'__ETC_PROFILE_DONE',
 			'__NIXOS_SET_ENVIRONMENT_DONE']:
 		if key in os.environ:
 			env[key] = os.environ[key]

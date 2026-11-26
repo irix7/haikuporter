@@ -1614,6 +1614,28 @@ class Port(object):
 		storeStringInFile(wrapperScriptContent, wrapperScript)
 		self._openShell(['-c', '. ' + wrapperScript], targetDir, {})
 
+	def _createToolAliases(self, crossToolsPaths):
+		"""Makes the tools of the cross toolchain available under their
+		   plain names (gcc, ar, ...), for recipes that call them so and
+		   do not use the host triple. Returns the directory."""
+		aliasDir = os.path.join(self.workDir, 'cross-tool-aliases')
+		os.makedirs(aliasDir, exist_ok=True)
+		triple = MachineArchitecture.getTripleFor(
+			buildPlatform.targetArchitecture)
+		for tool in ('gcc', 'cc', 'g++', 'c++', 'cpp', 'ar', 'ranlib', 'ld',
+				'as', 'nm', 'strip', 'objcopy', 'objdump', 'readelf',
+				'strings', 'size'):
+			link = os.path.join(aliasDir, tool)
+			if os.path.lexists(link):
+				continue
+			name = tool if tool != 'cc' else 'gcc'
+			for path in crossToolsPaths:
+				target = os.path.join(path, triple + '-' + name)
+				if os.path.exists(target):
+					os.symlink(target, link)
+					break
+		return aliasDir
+
 	def _openShell(self, params, targetDir, env):
 		"""Sets up environment and runs a shell with the given parameters"""
 
@@ -1624,6 +1646,15 @@ class Port(object):
 		if Configuration.isCrossBuildRepository():
 			# include cross development tools in path automatically
 			crossToolsPaths = buildPlatform.getCrossToolsBinPaths(self.workDir)
+			if Configuration.shallTryAllArchitectures():
+				crossToolsPaths.insert(0, self._createToolAliases(
+					crossToolsPaths))
+				# Recipes written for Haiku install with a plain
+				# "make install" into /packages. DESTDIR (make, cmake,
+				# meson and ninja read it) moves the files to the sysroot,
+				# where a cross build collects them.
+				shellEnv['DESTDIR'] = buildPlatform.getInstallDestDir(
+					self.workDir)
 			shellEnv['PATH'] = ':'.join(crossToolsPaths + [shellEnv['PATH']])
 		elif self.secondaryArchitecture:
 			# include secondary architecture tools in path

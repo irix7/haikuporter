@@ -344,6 +344,13 @@ runConfigure()
 		buildSpec="--build=$effectiveTargetMachineTriple"
 	fi
 
+	# A cross build passes the host to configure, unless the recipe does.
+	if [[ $isCrossRepository == true && $omitBuildSpec != true
+			&& " $* " != *" --host"* ]]; then
+		buildSpec="--host=$effectiveTargetMachineTriple"
+		buildSpec="$buildSpec --build=$buildMachineTriple"
+	fi
+
 	$configure $dirArgs $buildSpec $@
 }
 
@@ -878,7 +885,9 @@ else
 fi
 
 # post-INSTALL work
-if [ $recipeAction = "INSTALL" ]; then
+# (The debug info packages of a cross build are not made when building the
+# recipes of HaikuPorts for mips, HAIKUPORTER_ALL_ARCHITECTURES.)
+if [ $recipeAction = "INSTALL" ] && [ -z "$HAIKUPORTER_ALL_ARCHITECTURES" ]; then
 	packageDebugInfos
 fi
 
