@@ -320,6 +320,8 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:objcopy',
 			'cmd:passwd',
 			'cmd:perl',
+			# aspell dictionaries compress with the host prezip-bin
+			'cmd:prezip_bin',
 			'cmd:python3',
 			'cmd:ranlib',
 			'cmd:readelf',

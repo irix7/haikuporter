@@ -1680,6 +1680,26 @@ exec "%s" %s "${args[@]}"
 						os.symlink(target, link)
 					break
 
+		# Dictionary recipes ask aspell for its dictionary directory. The
+		# host aspell answers with a host path, so the answer is the
+		# directory name of Haiku's aspell; other calls go to the host.
+		aspell = os.path.join(aliasDir, 'aspell')
+		with open(aspell, 'w') as f:
+			f.write('''#!/usr/bin/env bash
+if [ "$*" = "dump config dict-dir" ]; then
+	echo /boot/system/data/aspell-0.60
+	exit 0
+fi
+here=$(dirname "$0")
+IFS=:
+for d in $PATH; do
+	[ "$d" = "$here" ] && continue
+	[ -x "$d/aspell" ] && exec "$d/aspell" "$@"
+done
+exit 0
+''')
+		os.chmod(aspell, 0o755)
+
 		# Haiku recipes set MIME types with settype. The host has no
 		# settype. The package step runs mimeset on every file, so this
 		# does nothing.
