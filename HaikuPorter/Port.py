@@ -1782,6 +1782,15 @@ done
 				# where a cross build collects them.
 				shellEnv['DESTDIR'] = buildPlatform.getInstallDestDir(
 					self.workDir)
+				# Makefiles with a fixed prefix and shell redirections
+				# write to /packages directly. With this variable set,
+				# /packages is a link to the packages directory of the
+				# sysroot (needs passwordless sudo, as on a CI runner).
+				if os.environ.get('HAIKUPORTER_PACKAGES_LINK'):
+					linkTarget = os.path.join(shellEnv['DESTDIR'], 'packages')
+					os.makedirs(linkTarget, exist_ok=True)
+					check_call(['sudo', '-n', 'ln', '-sfn', linkTarget,
+						'/packages'])
 				# Programs that a build runs itself are made for the
 				# build machine with the compiler of the host.
 				hostCC = shutil.which('gcc') or '/usr/bin/gcc'
