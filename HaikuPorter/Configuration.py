@@ -342,8 +342,20 @@ class Configuration(object):
 		return Configuration.configuration.allowNetworkInChroot != AllowNetworkMode.NO
 
 	@staticmethod
+	def shallTryAllArchitectures():
+		"""The environment variable HAIKUPORTER_ALL_ARCHITECTURES makes a
+		   recipe that does not list the target architecture count as
+		   untested, and untested recipes are built. The recipes of
+		   HaikuPorts list the architectures of Haiku and not the mips
+		   port of Muse. A recipe that marks the architecture as broken
+		   (!mips) stays broken."""
+		return os.environ.get('HAIKUPORTER_ALL_ARCHITECTURES', '') not in (
+			'', '0', 'no')
+
+	@staticmethod
 	def shallAllowUntested():
-		return Configuration.configuration.allowUntested
+		return (Configuration.configuration.allowUntested
+			or Configuration.shallTryAllArchitectures())
 
 	@staticmethod
 	def shallAllowUnsafeSources():

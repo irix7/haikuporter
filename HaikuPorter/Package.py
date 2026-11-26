@@ -129,6 +129,8 @@ class Package(object):
 			return self.recipeKeys['ARCHITECTURES'][Architectures.ANY]
 		elif Architectures.SOURCE in self.recipeKeys['ARCHITECTURES']:
 			return Status.STABLE
+		if Configuration.shallTryAllArchitectures():
+			return Status.UNTESTED
 		return Status.UNSUPPORTED
 
 	def isBuildableOnArchitecture(self, architecture):
