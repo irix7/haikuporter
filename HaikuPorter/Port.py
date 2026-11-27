@@ -1839,9 +1839,10 @@ done
 				# build machine with the compiler of the host.
 				hostCC = shutil.which('gcc') or '/usr/bin/gcc'
 				hostCXX = shutil.which('g++') or '/usr/bin/g++'
-				for name in ('CC_FOR_BUILD', 'HOSTCC', 'BUILD_CC'):
+				for name in ('CC_FOR_BUILD', 'HOSTCC', 'BUILD_CC', 'HOST_CC'):
 					shellEnv[name] = hostCC
-				for name in ('CXX_FOR_BUILD', 'HOSTCXX', 'BUILD_CXX'):
+				for name in ('CXX_FOR_BUILD', 'HOSTCXX', 'BUILD_CXX',
+						'HOST_CXX'):
 					shellEnv[name] = hostCXX
 				# Rust build scripts and proc macros run on the host and
 				# link with the host compiler, not the alias cc.
