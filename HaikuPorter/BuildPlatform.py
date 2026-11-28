@@ -294,6 +294,10 @@ class BuildPlatformUnix(BuildPlatform):
 			'cmd:aclocal',
 			'cmd:autoconf',
 			'cmd:autoheader',
+			# gettext tools of the host (apt autopoint) and the man page
+			# formatter that gettext builds its documentation with
+			'cmd:autopoint',
+			'cmd:groff',
 			'cmd:automake',
 			'cmd:autoreconf',
 			'cmd:awk',
